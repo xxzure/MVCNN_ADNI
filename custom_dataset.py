@@ -6,10 +6,10 @@ import pandas as pd
 class MultiViewDataSet(Dataset):
 
     def find_gfr(self, dir):
-        df=pd.read_csv('gfr.csv')
+        df=pd.read_csv('ADNI.csv')
         data_dict = {}      
         def map_dict(item):
-            data_dict[item["name"]] = [item["gfr_left"],item["gfr_right"],item["gfr_all"],item["age"],item["height"],item["weight"],item["depth_left"],item["depth_right"]]
+            data_dict[item["ID"]] = [item["target"]]
         df.apply(map_dict,axis=1)
         
         return data_dict
@@ -17,7 +17,7 @@ class MultiViewDataSet(Dataset):
     def __init__(self, root, data_type, transform=None, target_transform=None):
         self.x = []
         self.gfr = []
-        self.info = []
+        # self.info = []
         self.root = root
 
         self.data_dict = self.find_gfr(root)
@@ -33,7 +33,7 @@ class MultiViewDataSet(Dataset):
                     views.append(path + '/' + view)
                 self.x.append(views)
                 self.gfr.append([self.data_dict[item][0],self.data_dict[item][1],self.data_dict[item][2]])
-                self.info.append([self.data_dict[item][3],self.data_dict[item][4],self.data_dict[item][5],self.data_dict[item][6]])
+                # self.info.append([self.data_dict[item][3],self.data_dict[item][4],self.data_dict[item][5],self.data_dict[item][6]])
 
     # Override to give PyTorch access to any image on the dataset
     def __getitem__(self, index):
