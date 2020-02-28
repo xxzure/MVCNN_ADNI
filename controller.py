@@ -13,33 +13,30 @@ import os
 
 from models.resnet import *
 from models.mvcnn import *
-from models.simplenn import *
 import util
-# from logger import Logger
 from custom_dataset import MultiViewDataSet
 
 MVCNN = 'mvcnn'
 RESNET = 'resnet'
-SIMPLENN = 'simplenn'
-MODELS = [RESNET,MVCNN,SIMPLENN]
+MODELS = [RESNET,MVCNN]
 
 parser = argparse.ArgumentParser(description='MVCNN-PyTorch')
-parser.add_argument('--data', default='new_data', metavar='DIR', help='path to dataset')
-parser.add_argument('--depth', choices=[18, 34, 50, 101, 152], type=int, metavar='N', default=101, help='resnet depth (default: resnet18)')
-parser.add_argument('--model', '-m', metavar='MODEL', default=SIMPLENN, choices=MODELS,
+parser.add_argument('--data', default='data', metavar='DIR', help='path to dataset')
+parser.add_argument('--depth', choices=[18, 34, 50, 101, 152], type=int, metavar='N', default=18, help='resnet depth (default: resnet18)')
+parser.add_argument('--model', '-m', metavar='MODEL', default=RESNET, choices=MODELS,
                     help='pretrained model: ' + ' | '.join(MODELS) + ' (default: {})'.format(RESNET))
-parser.add_argument('--epochs', default=200, type=int, metavar='N', help='number of total epochs to run (default: 100)')
-parser.add_argument('-b', '--batch-size', default=8, type=int,
+parser.add_argument('--epochs', default=100, type=int, metavar='N', help='number of total epochs to run (default: 100)')
+parser.add_argument('-b', '--batch-size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 4)')
-parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float,
                     metavar='LR', help='initial learning rate (default: 0.0001)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum (default: 0.9)')
-parser.add_argument('--lr-decay-freq', default=40, type=float,
+parser.add_argument('--lr-decay-freq', default=30, type=float,
                     metavar='W', help='learning rate decay (default: 30)')
 parser.add_argument('--lr-decay', default=0.1, type=float,
                     metavar='W', help='learning rate decay (default: 0.1)')
-parser.add_argument('--print-freq', '-p', default=5, type=int,
+parser.add_argument('--print-freq', '-p', default=10, type=int,
                     metavar='N', help='print frequency (default: 10)')
 parser.add_argument('-r', '--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
@@ -50,7 +47,8 @@ args = parser.parse_args()
 print('Loading data')
 
 transform = transforms.Compose([
-    transforms.Resize((64,32)),
+    transforms.CenterCrop(500),
+    transforms.Resize(224),
     transforms.ToTensor(),
 ])
 
@@ -58,32 +56,30 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load dataset
 dset_train = MultiViewDataSet(args.data, 'train', transform=transform)
-train_loader = DataLoader(dset_train, batch_size=args.batch_size, shuffle=True)
+train_loader = DataLoader(dset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
 
 dset_val = MultiViewDataSet(args.data, 'test', transform=transform)
-val_loader = DataLoader(dset_val, batch_size=args.batch_size, shuffle=True)
+val_loader = DataLoader(dset_val, batch_size=args.batch_size, shuffle=True, num_workers=2)
 
-gfr = dset_train.gfr
+classes = [0, 1, 2]
+print(len(classes), classes)
 
 if args.model == RESNET:
     if args.depth == 18:
-        model = resnet18()
+        model = resnet18(pretrained=args.pretrained, num_classes=len(classes))
     elif args.depth == 34:
-        model = resnet34()
+        model = resnet34(pretrained=args.pretrained, num_classes=len(classes))
     elif args.depth == 50:
-        model = resnet50()
+        model = resnet50(pretrained=args.pretrained, num_classes=len(classes))
     elif args.depth == 101:
-        model = resnet101()
+        model = resnet101(pretrained=args.pretrained, num_classes=len(classes))
     elif args.depth == 152:
-        model = resnet152()
+        model = resnet152(pretrained=args.pretrained, num_classes=len(classes))
     else:
         raise Exception('Specify number of layers for resnet in command line. --resnet N')
     print('Using ' + args.model + str(args.depth))
-elif args.model == MVCNN:
-    model = mvcnn(pretrained=args.pretrained)
-    print('Using ' + args.model)
-elif args.model == SIMPLENN:
-    model = simplenn()
+else:
+    model = mvcnn(pretrained=args.pretrained,num_classes=len(classes))
     print('Using ' + args.model)
 
 model.to(device)
@@ -91,12 +87,11 @@ cudnn.benchmark = True
 
 print('Running on ' + str(device))
 
-# logger = Logger('logs')
 
 # Loss and Optimizer
 lr = args.lr
 n_epochs = args.epochs
-criterion = nn.MSELoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 best_acc = 0.0
@@ -112,7 +107,7 @@ def load_checkpoint():
     assert os.path.isfile(args.resume), 'Error: no checkpoint file found!'
 
     checkpoint = torch.load(args.resume)
-    # best_acc = checkpoint['best_acc']
+    best_acc = checkpoint['best_acc']
     start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
@@ -120,31 +115,18 @@ def load_checkpoint():
 
 def train():
     train_size = len(train_loader)
-    
-    for i, (inputs, targets, infos) in enumerate(train_loader):
-        # Convert from list of 3D to 4D
 
+    for i, (inputs, targets) in enumerate(train_loader):
+        # Convert from list of 3D to 4D
         inputs = np.stack(inputs, axis=1)
 
         inputs = torch.from_numpy(inputs)
-        
-        targets = np.stack(targets, axis=1)
 
-        targets = torch.from_numpy(targets)
-        targets = targets.float()
-
-        infos = np.stack(infos, axis=1)
-
-        infos = torch.from_numpy(infos)
-        infos = infos.float()
-        
-        # GPU!!!
-        if torch.cuda.is_available():
-            inputs, targets, infos = inputs.cuda(device), targets.cuda(device), infos.cuda(device)
-        inputs, targets, infos = Variable(inputs), Variable(targets), Variable(infos)
+        # inputs, targets = inputs.cuda(device), targets.cuda(device)
+        # inputs, targets = Variable(inputs), Variable(targets)
 
         # compute output
-        outputs = model(inputs,infos)
+        outputs = model(inputs)
         loss = criterion(outputs, targets)
 
         # compute gradient and do SGD step
@@ -168,46 +150,32 @@ def eval(data_loader, is_test=False):
     total_loss = 0.0
     n = 0
 
-    for i, (inputs, targets, infos) in enumerate(data_loader):
+    for i, (inputs, targets) in enumerate(data_loader):
         with torch.no_grad():
             # Convert from list of 3D to 4D
-            
             inputs = np.stack(inputs, axis=1)
 
             inputs = torch.from_numpy(inputs)
-            targets = np.stack(targets, axis=1)
 
-            targets = torch.from_numpy(targets)
-            targets = targets.float()
-
-            infos = np.stack(infos, axis=1)
-
-            infos = torch.from_numpy(infos)
-            infos = infos.float()
-                
-            if torch.cuda.is_available():
-                inputs, targets, infos = inputs.cuda(device), targets.cuda(device), infos.cuda(device)
-            inputs, targets, infos = Variable(inputs), Variable(targets), Variable(infos)
+            # inputs, targets = inputs.cuda(device), targets.cuda(device)
+            # inputs, targets = Variable(inputs), Variable(targets)
 
             # compute output
-            outputs = model(inputs,infos)
-            print("outputs:",outputs)
-            print("targets:",targets)
+            outputs = model(inputs)
             loss = criterion(outputs, targets)
 
             total_loss += loss
             n += 1
 
-            # _, predicted = torch.max(outputs.data, 1)
-            # total += targets.size(0)
-            # correct += (predicted.cpu() == targets.cpu()).sum()
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (predicted.cpu() == targets.cpu()).sum()
 
-    # avg_test_acc = 100 * correct / total
+    avg_test_acc = 100 * correct / total
     avg_loss = total_loss / n
 
-    return avg_loss
+    return avg_test_acc, avg_loss
 
-h_state = None
 
 # Training / Eval loop
 if args.resume:
@@ -223,15 +191,14 @@ for epoch in range(start_epoch, n_epochs):
     print('Time taken: %.2f sec.' % (time.time() - start))
 
     model.eval()
-    avg_loss = eval(val_loader)
+    avg_test_acc, avg_loss = eval(val_loader)
 
     print('\nEvaluation:')
-    print('\tVal Loss: %.4f' % avg_loss.item())
-    # print('\tCurrent best val acc: %.2f' % best_acc)
+    print('\tVal Acc: %.2f - Loss: %.4f' % (avg_test_acc.item(), avg_loss.item()))
+    print('\tCurrent best val acc: %.2f' % best_acc)
 
     # Log epoch to tensorboard
     # See log using: tensorboard --logdir='logs' --port=6006
-    # util.logEpoch(logger, model, epoch + 1, avg_loss, avg_test_acc)
 
     # Save model
     # if avg_test_acc > best_acc:

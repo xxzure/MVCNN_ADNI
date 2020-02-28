@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
-import numpy as np
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -108,12 +107,8 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = nn.AvgPool2d(2, stride=1) #nn.AdaptiveAvgPool2d(7)
+        self.avgpool = nn.AvgPool2d(7, stride=1) #nn.AdaptiveAvgPool2d(7)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
-
-        self.rnn = nn.RNN(2048,64,1)
-        self.out = nn.Linear(64,2)
-        
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -141,7 +136,6 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         # Swap batch and views dims
-        # [4, 20, 1, 64, 64]
         x = x.transpose(0, 1)
         #print(x.shape)
 
@@ -153,33 +147,24 @@ class ResNet(nn.Module):
             v = self.bn1(v)
             v = self.relu(v)
             v = self.maxpool(v)
-            
+
             v = self.layer1(v)
             v = self.layer2(v)
             v = self.layer3(v)
             v = self.layer4(v)
-        
+
             v = self.avgpool(v)
             v = v.view(v.size(0), -1)
-            # print(v.shape)
-            # [4, 512] 
+
             view_pool.append(v)
-        
-        # view_pool: [20, 4, 512] 
-        view_pool = torch.stack(view_pool)
-        out,h = self.rnn(view_pool)
-        # print(out.shape)
-        # print(h.shape)
-        predict = self.out(out)
-        predict = torch.squeeze(predict[-1::])
-        
-        # pooled_view = view_pool[0]
-        # for i in range(1, len(view_pool)):
-        #     pooled_view = torch.max(pooled_view, view_pool[i])
 
-        # pooled_view = self.fc(pooled_view)
+        pooled_view = view_pool[0]
+        for i in range(1, len(view_pool)):
+            pooled_view = torch.max(pooled_view, view_pool[i])
 
-        return predict
+        pooled_view = self.fc(pooled_view)
+        
+        return pooled_view
 
 
 def resnet18(pretrained=False, **kwargs):

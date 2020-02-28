@@ -5,34 +5,34 @@ import pandas as pd
 
 class MultiViewDataSet(Dataset):
 
-    def find_gfr(self, dir):
+    def find_target(self, dir):
         df=pd.read_csv('ADNI.csv')
         data_dict = {}      
         def map_dict(item):
-            data_dict[item["ID"]] = [item["target"]]
+            data_dict[str(item["ID"])] = [item["target"]]
         df.apply(map_dict,axis=1)
         
         return data_dict
 
     def __init__(self, root, data_type, transform=None, target_transform=None):
         self.x = []
-        self.gfr = []
+        self.target = []
         # self.info = []
         self.root = root
 
-        self.data_dict = self.find_gfr(root)
+        self.data_dict = self.find_target(root)
 
         self.transform = transform
         self.target_transform = target_transform
         # root / <train/test> / <item> / <view>.png
         for item in os.listdir(root + '/' + data_type):
             views = []
-            path = root + '/' + data_type + '/' + item + '/all'
+            path = root + '/' + data_type + '/' + item
             if os.path.isdir(path):
                 for view in os.listdir(path):
                     views.append(path + '/' + view)
                 self.x.append(views)
-                self.gfr.append([self.data_dict[item][0],self.data_dict[item][1],self.data_dict[item][2]])
+                self.target.append(self.data_dict[item][0])
                 # self.info.append([self.data_dict[item][3],self.data_dict[item][4],self.data_dict[item][5],self.data_dict[item][6]])
 
     # Override to give PyTorch access to any image on the dataset
@@ -47,7 +47,7 @@ class MultiViewDataSet(Dataset):
                 im = self.transform(im)
             views.append(im)
 
-        return views, self.gfr[index], self.info[index]
+        return views, self.target[index] #, self.info[index]
 
     # Override to give PyTorch size of dataset
     def __len__(self):
