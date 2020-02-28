@@ -122,8 +122,8 @@ def train():
 
         inputs = torch.from_numpy(inputs)
 
-        # inputs, targets = inputs.cuda(device), targets.cuda(device)
-        # inputs, targets = Variable(inputs), Variable(targets)
+        inputs, targets = inputs.cuda(device), targets.cuda(device)
+        inputs, targets = Variable(inputs), Variable(targets)
 
         # compute output
         outputs = model(inputs)
@@ -157,8 +157,8 @@ def eval(data_loader, is_test=False):
 
             inputs = torch.from_numpy(inputs)
 
-            # inputs, targets = inputs.cuda(device), targets.cuda(device)
-            # inputs, targets = Variable(inputs), Variable(targets)
+            inputs, targets = inputs.cuda(device), targets.cuda(device)
+            inputs, targets = Variable(inputs), Variable(targets)
 
             # compute output
             outputs = model(inputs)
