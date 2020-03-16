@@ -121,8 +121,8 @@ def train():
         inputs = np.stack(inputs, axis=1)
 
         inputs = torch.from_numpy(inputs)
-
-        inputs, targets = inputs.cuda(device), targets.cuda(device)
+        if torch.cuda.is_available():
+            inputs, targets = inputs.cuda(device), targets.cuda(device)
         inputs, targets = Variable(inputs), Variable(targets)
 
         # compute output
@@ -156,8 +156,8 @@ def eval(data_loader, is_test=False):
             inputs = np.stack(inputs, axis=1)
 
             inputs = torch.from_numpy(inputs)
-
-            inputs, targets = inputs.cuda(device), targets.cuda(device)
+            if torch.cuda.is_available():
+                inputs, targets = inputs.cuda(device), targets.cuda(device)
             inputs, targets = Variable(inputs), Variable(targets)
 
             # compute output
@@ -201,17 +201,17 @@ for epoch in range(start_epoch, n_epochs):
     # See log using: tensorboard --logdir='logs' --port=6006
 
     # Save model
-    # if avg_test_acc > best_acc:
-    #     print('\tSaving checkpoint - Acc: %.2f' % avg_test_acc)
-    #     best_acc = avg_test_acc
-    #     best_loss = avg_loss
-    #     util.save_checkpoint({
-    #         'epoch': epoch + 1,
-    #         'state_dict': model.state_dict(),
-    #         'acc': avg_test_acc,
-    #         'best_acc': best_acc,
-    #         'optimizer': optimizer.state_dict(),
-    #     }, args.model, args.depth)
+    if avg_test_acc > best_acc:
+        print('\tSaving checkpoint - Acc: %.2f' % avg_test_acc)
+        best_acc = avg_test_acc
+        best_loss = avg_loss
+        # util.save_checkpoint({
+        #     'epoch': epoch + 1,
+        #     'state_dict': model.state_dict(),
+        #     'acc': avg_test_acc,
+        #     'best_acc': best_acc,
+        #     'optimizer': optimizer.state_dict(),
+        # }, args.model, args.depth)
 
     # Decaying Learning Rate
     if (epoch + 1) % args.lr_decay_freq == 0:

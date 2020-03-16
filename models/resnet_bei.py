@@ -110,21 +110,6 @@ class ResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(7, stride=1) #nn.AdaptiveAvgPool2d(7)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-        self.one_by_one_conv_output = 10 #num_local_features
-        #nn.Parameter to register the parameter in model.parameters() to make them trainable
-        #if Variable, not trainable
-        self.lambdas = nn.Parameter(torch.ones(self.one_by_one_conv_output)*0.5, requires_grad=True)
-        self.classifier = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(self.one_by_one_conv_output**2, 4096),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(inplace=True),
-            nn.Linear(4096, num_classes),
-        )
-        self.one_by_one_conv = nn.Conv2d(512, self.one_by_one_conv_output, kernel_size=1)
-
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -149,32 +134,6 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def sign_sqrt(self, x):
-        x = torch.mul(torch.sign(x),torch.sqrt(torch.abs(x)+1e-12))
-        return x
-
-
-    def bilinear_pooling(self, x):
-        '''
-        x = [x1, x2, ..., xn], size d*N, d is number of features of each patch, N is number of patches of all views 
-        return: d*d
-        '''
-        return torch.mm(x, x.t())
-
-    def harmonize(self, s):
-        '''
-        s: (d, ) tensor, sigular values
-        return: (d, ) tensor after harmonized by box-cox transform
-        '''
-        harmonized_s = torch.zeros_like(s)
-        n = s.size(0)
-        for i in range(n):
-            if torch.abs(self.lambdas[i]) > 1e-12:
-                harmonized_s[i] = (s[i].pow(self.lambdas[i]) - 1) / self.lambdas[i]
-            else:
-                harmonized_s[i] = torch.log(s[i])
-        return harmonized_s
-        
     def forward(self, x):
         # Swap batch and views dims
         x = x.transpose(0, 1)
@@ -195,35 +154,15 @@ class ResNet(nn.Module):
             v = self.layer4(v)
 
             v = self.avgpool(v)
-            # v = v.view(v.size(0), -1)
-            v = self.sign_sqrt(v) #early sqrt sublayer
-            v = self.one_by_one_conv(v) #conv sublayer
+            v = v.view(v.size(0), -1)
 
             view_pool.append(v)
 
-        y = torch.stack(view_pool)
-        y = y.transpose(0, 1)
-        res = []
-        #each member in batch
-        for b in y:
-            #[num_local_features, views, w, h]
-            b = b.transpose(0, 1).contiguous()
-            #[num_local_features, views*w*h]
-            b = b.view(b.size(0), -1)
-            #[num_local_features, num_local_features]
-            b = self.bilinear_pooling(b) #bininear pooling
-            u, s, v = torch.svd(b)
-            harmonized_s = self.harmonize(s) #harmonize singular values
-            b = torch.mm(torch.mm(u, torch.diag(harmonized_s)), v.t())
-            #[num_local_features*num_local_features]
-            b = b.view(-1) #vectorized
-            b = self.sign_sqrt(b) #late sqrt layer
-            b = b / (torch.norm(b, 2)+(1e-8)) #l2 norm sub-layer
-            res.append(b)
+        pooled_view = view_pool[0]
+        for i in range(1, len(view_pool)):
+            pooled_view = torch.max(pooled_view, view_pool[i])
 
-        pooled_view = torch.stack(res) #assembly into batch, [batch_size, num_local_features**2]
-        
-        pooled_view = self.classifier(pooled_view)
+        pooled_view = self.fc(pooled_view)
         
         return pooled_view
 
