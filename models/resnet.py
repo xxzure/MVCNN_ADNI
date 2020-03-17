@@ -123,7 +123,7 @@ class ResNet(nn.Module):
             # nn.ReLU(inplace=True),
             # nn.Linear(4096, num_classes),
         )
-        self.one_by_one_conv = nn.Conv2d(512, self.one_by_one_conv_output, kernel_size=1)
+        self.one_by_one_conv = nn.Conv2d(2048, self.one_by_one_conv_output, kernel_size=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
