@@ -110,7 +110,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(7, stride=1) #nn.AdaptiveAvgPool2d(7)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-        self.one_by_one_conv_output = 40 #num_local_features
+        self.one_by_one_conv_output = 20 #num_local_features
         #nn.Parameter to register the parameter in model.parameters() to make them trainable
         #if Variable, not trainable
         self.lambdas = nn.Parameter(torch.ones(self.one_by_one_conv_output)*0.5, requires_grad=True)
@@ -217,8 +217,8 @@ class ResNet(nn.Module):
             b = torch.mm(torch.mm(u, torch.diag(harmonized_s)), v.t())
             #[num_local_features*num_local_features]
             b = b.view(-1) #vectorized
-            b = self.sign_sqrt(b) #late sqrt layer
-            b = b / (torch.norm(b, 2)+(1e-8)) #l2 norm sub-layer
+            # b = self.sign_sqrt(b) #late sqrt layer
+            # b = b / (torch.norm(b, 2)+(1e-8)) #l2 norm sub-layer
             res.append(b)
 
         pooled_view = torch.stack(res) #assembly into batch, [batch_size, num_local_features**2]
