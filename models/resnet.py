@@ -110,7 +110,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(7, stride=1) #nn.AdaptiveAvgPool2d(7)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-        self.one_by_one_conv_output = 10 #num_local_features
+        self.one_by_one_conv_output = 30 #num_local_features
         #nn.Parameter to register the parameter in model.parameters() to make them trainable
         #if Variable, not trainable
         self.lambdas = nn.Parameter(torch.ones(self.one_by_one_conv_output)*0.5, requires_grad=True)
