@@ -116,12 +116,12 @@ class ResNet(nn.Module):
         self.lambdas = nn.Parameter(torch.ones(self.one_by_one_conv_output)*0.5, requires_grad=True)
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(self.one_by_one_conv_output**2, 4096),
+            nn.Linear(self.one_by_one_conv_output**2, 1024),
             nn.ReLU(inplace=True),
             nn.Dropout(),
-            nn.Linear(4096, 4096),
+            nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
-            nn.Linear(4096, num_classes),
+            nn.Linear(512, num_classes),
         )
         self.one_by_one_conv = nn.Conv2d(512, self.one_by_one_conv_output, kernel_size=1)
 
