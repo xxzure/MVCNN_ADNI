@@ -116,12 +116,12 @@ class ResNet(nn.Module):
         self.lambdas = nn.Parameter(torch.ones(self.one_by_one_conv_output)*0.5, requires_grad=True)
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(self.one_by_one_conv_output**2, num_classes),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
-            # nn.Linear(4096, 4096),
-            # nn.ReLU(inplace=True),
-            # nn.Linear(4096, num_classes),
+            nn.Linear(self.one_by_one_conv_output**2, 4096),
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(inplace=True),
+            nn.Linear(4096, num_classes),
         )
         self.one_by_one_conv = nn.Conv2d(512, self.one_by_one_conv_output, kernel_size=1)
 
@@ -217,7 +217,7 @@ class ResNet(nn.Module):
             b = torch.mm(torch.mm(u, torch.diag(harmonized_s)), v.t())
             #[num_local_features*num_local_features]
             b = b.view(-1) #vectorized
-            # b = self.sign_sqrt(b) #late sqrt layer
+            b = self.sign_sqrt(b) #late sqrt layer
             # b = b / (torch.norm(b, 2)+(1e-8)) #l2 norm sub-layer
             res.append(b)
 
