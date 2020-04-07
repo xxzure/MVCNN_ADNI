@@ -52,7 +52,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 # Load dataset
 dset_train = MultiViewDataSet(args.data, 'train', transform=transform)
