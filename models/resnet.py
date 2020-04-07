@@ -195,9 +195,11 @@ class ResNet(nn.Module):
             v = self.layer4(v)
 
             v = self.avgpool(v)
+            # print(v.shape) [4, 512, 1, 1]
             # v = v.view(v.size(0), -1)
             v = self.sign_sqrt(v) #early sqrt sublayer
             v = self.one_by_one_conv(v) #conv sublayer
+            print(v.shape)
 
             view_pool.append(v)
 
