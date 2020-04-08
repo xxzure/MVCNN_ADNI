@@ -38,7 +38,7 @@ def transferNii(file_path):
     return data
 
 # Helper functions
-def load_checkpoint(resume = "checkpoint/resnet101_checkpoint.pth.tar"):
+def load_checkpoint(resume = "checkpoint/resnet18_checkpoint.pth.tar"):
     global best_acc, start_epoch
     # Load checkpoint.
     print('\n==> Loading checkpoint..')
