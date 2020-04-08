@@ -17,6 +17,7 @@ import util
 from custom_dataset import MultiViewDataSet
 
 import nibabel as nib
+from PIL import Image
 
 
 transform = transforms.Compose([
@@ -57,9 +58,12 @@ if __name__ == "__main__":
     raw_data = transferNii(file_path)
     (x, y, z) = raw_data.shape
     data = np.zeros(shape=(20, y, z))
+    views = []
     for i in range(20):
-        data[i] = transform(raw_data[i])
-    data = data.unsqueeze(0)
+        im = Image.open(raw_data[i])
+        im = im.convert('L')
+        views.append(im)
+    data = views.unsqueeze(0)
     net = load_checkpoint()
     output = net(data)
     print(output)
