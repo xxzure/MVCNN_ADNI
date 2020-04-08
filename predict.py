@@ -45,10 +45,10 @@ def load_checkpoint(resume = "checkpoint/resnet101_checkpoint.pth.tar"):
     assert os.path.isfile(resume), 'Error: no checkpoint file found!'
 
     checkpoint = torch.load(resume)
-    best_acc = checkpoint['best_acc']
-    start_epoch = checkpoint['epoch']
-    model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
+    # best_acc = checkpoint['best_acc']
+    # start_epoch = checkpoint['epoch']
+    # model.load_state_dict(checkpoint['state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer'])
     return checkpoint
 
 
@@ -63,8 +63,7 @@ if __name__ == "__main__":
         im = im.convert('L')
         im = transform(im)
         views.append(im)
-    views = np.array(views)
-    data = torch.from_numpy(views)
+    data = torch.stack(views)
     data = data.unsqueeze(0)
     net = load_checkpoint()
     output = net(data)
