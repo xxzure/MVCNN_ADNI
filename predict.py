@@ -69,6 +69,7 @@ if __name__ == "__main__":
     data = torch.stack(views)
     data = data.unsqueeze(0)
     net = load_checkpoint()
-    output = model(data)
-    print(output)
+    outputs = model(data)
+    _, predicted = torch.max(outputs.data, 1)
+    print(output, predicted)
 
