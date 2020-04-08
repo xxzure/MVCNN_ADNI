@@ -37,6 +37,8 @@ def transferNii(file_path):
             cou_num = cou_num + 1
     return data
 
+model = resnet18()
+model.to(device)
 # Helper functions
 def load_checkpoint(resume = "checkpoint/resnet18_checkpoint.pth.tar"):
     global best_acc, start_epoch
@@ -47,7 +49,7 @@ def load_checkpoint(resume = "checkpoint/resnet18_checkpoint.pth.tar"):
     checkpoint = torch.load(resume)
     # best_acc = checkpoint['best_acc']
     # start_epoch = checkpoint['epoch']
-    # model.load_state_dict(checkpoint['state_dict'])
+    model.load_state_dict(checkpoint['state_dict'])
     # optimizer.load_state_dict(checkpoint['optimizer'])
     return checkpoint
 
@@ -66,6 +68,6 @@ if __name__ == "__main__":
     data = torch.stack(views)
     data = data.unsqueeze(0)
     net = load_checkpoint()
-    output = net(data)
+    output = model(data)
     print(output)
 
