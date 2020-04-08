@@ -37,6 +37,7 @@ def transferNii(file_path):
             cou_num = cou_num + 1
     return data
 
+device = torch.device("cpu")
 model = resnet18()
 model.to(device)
 # Helper functions
