@@ -60,12 +60,10 @@ if __name__ == "__main__":
     for i in range(20):
         temp = raw_data[i]
         im=Image.fromarray(temp)
-        print(im.size)
         im = im.convert('L')
-        print(im.size)
         im = transform(im)
         views.append(im)
-    data = views.from_numpy(data)
+    data = torch.Tensor(views)
     data = data.unsqueeze(0)
     net = load_checkpoint()
     output = net(data)
