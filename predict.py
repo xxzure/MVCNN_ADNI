@@ -71,5 +71,5 @@ if __name__ == "__main__":
     net = load_checkpoint()
     outputs = model(data)
     _, predicted = torch.max(outputs.data, 1)
-    print(output, predicted)
+    print(outputs, predicted)
 
