@@ -56,14 +56,16 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
     raw_data = transferNii(file_path)
     (x, y, z) = raw_data.shape
-    data = np.zeros(shape=(20, 1, y, z))
+    views = []
     for i in range(20):
         temp = raw_data[i]
-        temp = np.expand_dims(temp, 0)
-        print(temp.shape)
-        print(type(temp))
-        data[i] = transform(temp)
-    data = torch.from_numpy(data)
+        im=Image.fromarray(temp)
+        print(im.shape)
+        im = im.convert('L')
+        print(im.shape)
+        im = transform(im)
+        views.append(im)
+    data = views.from_numpy(data)
     data = data.unsqueeze(0)
     net = load_checkpoint()
     output = net(data)
