@@ -60,6 +60,8 @@ if __name__ == "__main__":
     for i in range(20):
         temp = raw_data[i]
         temp = np.expand_dims(temp, 0)
+        print(temp.shape)
+        print(type(temp))
         data[i] = transform(temp)
     data = torch.from_numpy(data)
     data = data.unsqueeze(0)
