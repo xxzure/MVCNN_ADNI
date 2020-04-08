@@ -17,7 +17,7 @@ import util
 from custom_dataset import MultiViewDataSet
 
 import nibabel as nib
-
+from PIL import Image
 
 transform = transforms.Compose([
     transforms.CenterCrop(500),
