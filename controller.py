@@ -150,6 +150,10 @@ def eval(data_loader, is_test=False):
     total_loss = 0.0
     n = 0
 
+    cn1 = cn2 = cn3 = cn4 =  0
+    mci1 = mci2 = mci3 = mci4 = 0
+    ad1 = ad2 = ad3 = ad4 = 0
+    cma = []
     for i, (inputs, targets) in enumerate(data_loader):
         with torch.no_grad():
             # Convert from list of 3D to 4D
@@ -170,11 +174,43 @@ def eval(data_loader, is_test=False):
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += (predicted.cpu() == targets.cpu()).sum()
+            if targets.cpu() == 0:
+                if predicted.cpu() == 0:
+                    cn1 = cn1 + 1
+                else:
+                    cn2 = cn2 + 1
+            else:
+                if predicted.cpu() == 0:
+                    cn3 = cn3 + 1
+                else:
+                    cn4 = cn4 + 1
+            
+            if targets.cpu() == 1:
+                if predicted.cpu() == 1:
+                    mci1 = mci1 + 1
+                else:
+                    mci2 = mci2 + 1
+            else:
+                if predicted.cpu() == 1:
+                    mci3 = mci3 + 1
+                else:
+                    mci4 = mci4 + 1
 
+            if targets.cpu() == 2:
+                if predicted.cpu() == 2:
+                    ad1 = ad1 + 1
+                else:
+                    ad2 = ad2 + 1
+            else:
+                if predicted.cpu() == 2:
+                    ad3 = ad3 + 1
+                else:
+                    ad4 = ad4 + 1
+    cma.append(cn1,cn2,cn3,cn4,mci1,mci2,mci3,mci4,ad1,ad2,ad3,ad4)
     avg_test_acc = 100 * correct / total
     avg_loss = total_loss / n
 
-    return avg_test_acc, avg_loss
+    return avg_test_acc, avg_loss, cma
 
 
 # Training / Eval loop
@@ -191,11 +227,12 @@ for epoch in range(start_epoch, n_epochs):
     print('Time taken: %.2f sec.' % (time.time() - start))
 
     model.eval()
-    avg_test_acc, avg_loss = eval(val_loader)
+    avg_test_acc, avg_loss, cma = eval(val_loader)
 
     print('\nEvaluation:')
     print('\tVal Acc: %.2f - Loss: %.4f' % (avg_test_acc.item(), avg_loss.item()))
     print('\tCurrent best val acc: %.2f' % best_acc)
+    print(cma)
 
     # Log epoch to tensorboard
     # See log using: tensorboard --logdir='logs' --port=6006

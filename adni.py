@@ -103,6 +103,30 @@ def random_split(path, new_path):
                 os.mkdir(new_root)
             shutil.move(root, new_root)
 
+def cou(path):
+    cn = 0
+    mci = 0
+    ad = 0
+    c = 0
+    for files in os.listdir(path):
+        if files == '.DS_Store':
+            continue
+        # print(files)
+        c = c + 1
+        df=pd.read_csv('ADNI.csv')
+        data_dict = {}      
+        def map_dict(item):
+            data_dict[str(item["ID"])] = item["target"]
+        df.apply(map_dict,axis=1)
+        # print(data_dict[files])
+        if(data_dict[files]==0):
+            cn = cn + 1
+        elif(data_dict[files]==1):
+            mci = mci + 1
+        elif(data_dict[files]==2):
+            ad = ad + 1
+    print(c)
+    print(cn,mci,ad) 
 
 if __name__ == '__main__':
     filepath = 'nii_raw_data'
@@ -110,7 +134,8 @@ if __name__ == '__main__':
     save_root = 'view_image'
     data = 'data'
     # nii_to_image(filepath)
-    split_dirs(imgfile, save_root, 30, 20)
+    # split_dirs(imgfile, save_root, 30, 20)
     # print(find_target())
-    random_split(save_root, data)
+    # random_split(save_root, data)
+    cou('data/train')
     
